@@ -91,67 +91,36 @@ def dijkstra(grid: Grid, starts: list[tuple[int, int]]):
 def taxicab_distance(point1: tuple[int, int], point2: tuple[int, int]) -> int:
     return abs(point1[0] - point2[0]) + abs(point1[1] - point2[1])
 
-# Return dict[saved_time] = count
-def find_short_cheats(grid: Grid, scores: dict, nodes: list[tuple[int, int]], end_pos: tuple[int, int]) -> dict:
-    found = {}
-    for node in nodes:
-        for x, y in zip([-1, 1, 0, 0], [0, 0, -1, 1]):
-            new_pos_x = node[0] + x
-            new_pos_y = node[1] + y
-            offset_x = node[0] + x * 2
-            offset_y = node[1] + y * 2
-            if grid.is_wall(new_pos_x, new_pos_y) and (grid.is_empty(offset_x, offset_y) or (offset_x, offset_y) == end_pos):
-                if (offset_x, offset_y) in scores:
-                    new_score = scores[node] + 2
-                    cheat_score = scores[(offset_x, offset_y)] - new_score
-                    if cheat_score > 0:
-                        # print(f"Cheat {offset_x, offset_y} from {node} saves {cheat_score} with {scores[(offset_x, offset_y)]} - {scores[(node[0], node[1])]}")
-                        found[cheat_score] = found.get(cheat_score, 0) + 1
 
-    return found
-
-def part1():
-    grid = parse()
-
-    start_pos = grid.get_start_pos()
-    end_pos = grid.get_end_pos()
-    scores, nodes = dijkstra(grid, [start_pos])
-    nodes = [start_pos] + [node for node in nodes]
-
-    cheats = find_short_cheats(grid, scores, nodes, end_pos)
-
-    count = 0
-    for cheat_time, cheat_count in cheats.items():
-        # print(f"There are {cheat_count} cheat/s that save {cheat_time} picoseconds")
-        if cheat_time >= 100:
-            count += cheat_count
-    print(count)
-
-def find_long_cheats(grid: Grid, scores: dict, nodes: list[tuple[int, int]]) -> dict:
+def find_cheats(scores: dict, nodes: list[tuple[int, int]], cheat_time: int) -> dict:
     cheats = {}
-    for node in nodes:
-        for other_node in filter(lambda x: x != node, nodes):
-            current_distance = scores[other_node] - scores[node]
+    for node_idx, node in enumerate(nodes):
+        for other_node in nodes[node_idx:]:
             cheat_distance = taxicab_distance(other_node, node)
-            if 0 < cheat_distance <= 20:
+            if 0 < cheat_distance <= cheat_time:
                 saved_time = scores[other_node] - (scores[node] + cheat_distance)
                 cheats[saved_time] = cheats.get(saved_time, 0) + 1
+
     return cheats
 
-def part2():
+def run(cheat_time: int):
     grid = parse()
 
     start_pos = grid.get_start_pos()
-    end_pos = grid.get_end_pos()
     scores, nodes = dijkstra(grid, [start_pos])
     nodes = [start_pos] + [node for node in nodes]
 
-    cheats = find_long_cheats(grid, scores, nodes)
+    cheats = find_cheats(scores, nodes, cheat_time)
 
-    count = 0
-    for cheat_time, cheat_count in cheats.items():
-        if cheat_time >= 100:
-            count += cheat_count
+    count = sum([count if time >= 100 else 0 for time, count in cheats.items()])
     print(count)
 
+
+def part1():
+    run(2)
+
+def part2():
+    run(20)
+
+part1()
 part2()
